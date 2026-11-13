@@ -1,0 +1,1082 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Is It Worth the Time? — Automation ROI Calculator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            sketch: ['"Architects Daughter"', 'cursive', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            ink: '#18181b',
+            paper: '#fafaf9',
+            blueprint: '#f4f4f5',
+          },
+          boxShadow: {
+            'sketch': '4px 4px 0px 0px #18181b',
+            'sketch-sm': '2px 2px 0px 0px #18181b',
+            'sketch-lg': '6px 6px 0px 0px #18181b',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom subtle blueprint grid background */
+    .bg-blueprint-grid {
+      background-color: #fafaf9;
+      background-image: 
+        linear-gradient(to right, rgba(24, 24, 27, 0.045) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(24, 24, 27, 0.045) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    /* Custom range slider styling */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 8px;
+      border-radius: 9999px;
+      background: #e4e4e7;
+      border: 1.5px solid #18181b;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #facc15;
+      border: 2px solid #18181b;
+      margin-top: -8.5px;
+      box-shadow: 2px 2px 0px #18181b;
+      transition: transform 0.1s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.1);
+    }
+
+    /* Hide number input arrows for cleaner look while keeping keyboard usability */
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body class="bg-blueprint-grid text-ink font-sans antialiased min-h-screen selection:bg-amber-200 selection:text-ink">
+
+  <!-- Header -->
+  <header class="border-b-2 border-ink bg-white/95 backdrop-blur-sm sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div class="flex items-start sm:items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-amber-300 border-2 border-ink shadow-sketch-sm flex items-center justify-center shrink-0 font-sketch font-bold text-lg">
+          ⏱️
+        </div>
+        <div>
+          <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight text-ink leading-tight">
+            Is It Worth the Time?
+          </h1>
+          <p class="text-xs sm:text-sm text-zinc-600">
+            Interactive Automation ROI Calculator inspired by <span class="font-sketch font-semibold text-ink">xkcd #1205</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Quick Presets Bar -->
+      <div class="flex flex-wrap items-center gap-1.5">
+        <span class="text-xs font-semibold uppercase tracking-wider text-zinc-500 mr-1">Presets:</span>
+        <button type="button" onclick="applyPreset(50, 'day', 1, 'seconds')" class="preset-btn text-xs font-medium px-2.5 py-1.5 rounded-md bg-white hover:bg-amber-100 border border-ink shadow-sketch-sm active:translate-x-[1px] active:translate-y-[1px] transition">
+          50/day · 1s → ~1d
+        </button>
+        <button type="button" onclick="applyPreset(1, 'day', 1, 'minutes')" class="preset-btn text-xs font-medium px-2.5 py-1.5 rounded-md bg-white hover:bg-amber-100 border border-ink shadow-sketch-sm active:translate-x-[1px] active:translate-y-[1px] transition">
+          Daily · 1m → ~1d
+        </button>
+        <button type="button" onclick="applyPreset(1, 'week', 30, 'minutes')" class="preset-btn text-xs font-medium px-2.5 py-1.5 rounded-md bg-white hover:bg-amber-100 border border-ink shadow-sketch-sm active:translate-x-[1px] active:translate-y-[1px] transition">
+          Weekly · 30m → ~5d
+        </button>
+        <button type="button" onclick="applyPreset(5, 'day', 5, 'minutes')" class="preset-btn text-xs font-medium px-2.5 py-1.5 rounded-md bg-white hover:bg-amber-100 border border-ink shadow-sketch-sm active:translate-x-[1px] active:translate-y-[1px] transition">
+          5/day · 5m → ~4w
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8">
+    
+    <!-- Top Section: Calculator Inputs & Live ROI Output -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+      
+      <!-- Left Column: Inputs Panel (5 cols) -->
+      <section class="lg:col-span-5 bg-white rounded-xl border-2 border-ink shadow-sketch p-5 sm:p-6 space-y-6">
+        <div class="flex items-center justify-between border-b border-zinc-200 pb-3">
+          <h2 class="text-base sm:text-lg font-bold tracking-tight flex items-center gap-2">
+            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-ink text-white text-xs font-mono">1</span>
+            Task Parameters
+          </h2>
+          <button type="button" id="resetBtn" onclick="resetDefaults()" class="text-xs font-medium text-zinc-500 hover:text-ink underline underline-offset-2">
+            Reset
+          </button>
+        </div>
+
+        <!-- Calendar Mode Toggle -->
+        <div class="space-y-2">
+          <label class="block text-xs font-bold uppercase tracking-wider text-zinc-600">
+            Time Basis (Clock Mode)
+          </label>
+          <div class="grid grid-cols-2 gap-2 p-1 bg-zinc-100 rounded-lg border border-ink">
+            <button type="button" id="mode247Btn" onclick="setScheduleMode('247')" class="py-2 px-3 rounded-md text-xs sm:text-sm font-semibold transition flex flex-col items-center text-center bg-ink text-white shadow-sm">
+              <span>24/7 Calendar</span>
+              <span class="text-[10px] opacity-80 font-normal">xkcd default (24h/d, 365.25d/y)</span>
+            </button>
+            <button type="button" id="modeWorkBtn" onclick="setScheduleMode('work')" class="py-2 px-3 rounded-md text-xs sm:text-sm font-semibold transition flex flex-col items-center text-center text-zinc-700 hover:text-ink">
+              <span>Work Schedule</span>
+              <span class="text-[10px] opacity-80 font-normal">8h/day, 5d/wk, 50wks/yr</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Input 1: Task Frequency -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <label for="freqValue" class="block text-sm font-bold text-ink">
+              How often do you do the task?
+            </label>
+            <span id="annualRunsBadge" class="text-xs font-mono text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded border border-zinc-300">
+              365 runs/yr
+            </span>
+          </div>
+          <div class="flex gap-2">
+            <input 
+              type="number" 
+              id="freqValue" 
+              min="0.01" 
+              step="any" 
+              value="1" 
+              class="w-1/2 rounded-lg border-2 border-ink px-3.5 py-2.5 text-base font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
+            />
+            <select 
+              id="freqUnit" 
+              class="w-1/2 rounded-lg border-2 border-ink px-3 py-2.5 text-sm sm:text-base font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-amber-400 cursor-pointer"
+            >
+              <option value="hour">times per hour</option>
+              <option value="day" selected>times per day</option>
+              <option value="week">times per week</option>
+              <option value="month">times per month</option>
+              <option value="year">times per year</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Input 2: Time Shaved Off (Direct vs Before/After Toggle) -->
+        <div class="space-y-2.5 pt-1 border-t border-zinc-100">
+          <div class="flex items-center justify-between gap-2">
+            <label class="block text-sm font-bold text-ink">
+              How much time do you shave off?
+            </label>
+            <button 
+              type="button" 
+              id="toggleBeforeAfterBtn" 
+              onclick="toggleBeforeAfterMode()"
+              class="text-xs font-semibold text-amber-800 bg-amber-100 hover:bg-amber-200 border border-amber-400 px-2.5 py-1 rounded-md transition"
+            >
+              Before / After mode
+            </button>
+          </div>
+
+          <!-- Direct Mode -->
+          <div id="directTimeInputGroup" class="flex gap-2">
+            <input 
+              type="number" 
+              id="savedValue" 
+              min="0.01" 
+              step="any" 
+              value="1" 
+              class="w-1/2 rounded-lg border-2 border-ink px-3.5 py-2.5 text-base font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
+            />
+            <select 
+              id="savedUnit" 
+              class="w-1/2 rounded-lg border-2 border-ink px-3 py-2.5 text-sm sm:text-base font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-amber-400 cursor-pointer"
+            >
+              <option value="seconds">seconds</option>
+              <option value="minutes" selected>minutes</option>
+              <option value="hours">hours</option>
+              <option value="days">days</option>
+            </select>
+          </div>
+
+          <!-- Before & After Mode (Hidden by default) -->
+          <div id="beforeAfterInputGroup" class="hidden space-y-3 bg-zinc-50 p-3.5 rounded-lg border border-zinc-300">
+            <div class="grid grid-cols-2 gap-2.5">
+              <div>
+                <label for="currentDurValue" class="block text-xs font-semibold text-zinc-600 mb-1">Current Duration</label>
+                <div class="flex gap-1">
+                  <input type="number" id="currentDurValue" min="0" step="any" value="5" class="w-1/2 rounded border border-ink px-2 py-1.5 text-sm font-mono font-semibold bg-white" />
+                  <select id="currentDurUnit" class="w-1/2 rounded border border-ink px-1.5 py-1.5 text-xs font-semibold bg-white">
+                    <option value="seconds">sec</option>
+                    <option value="minutes" selected>min</option>
+                    <option value="hours">hr</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label for="newDurValue" class="block text-xs font-semibold text-zinc-600 mb-1">Automated Duration</label>
+                <div class="flex gap-1">
+                  <input type="number" id="newDurValue" min="0" step="any" value="1" class="w-1/2 rounded border border-ink px-2 py-1.5 text-sm font-mono font-semibold bg-white" />
+                  <select id="newDurUnit" class="w-1/2 rounded border border-ink px-1.5 py-1.5 text-xs font-semibold bg-white">
+                    <option value="seconds">sec</option>
+                    <option value="minutes" selected>min</option>
+                    <option value="hours">hr</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between text-xs pt-1 border-t border-zinc-200">
+              <span class="text-zinc-600">Net time shaved per run:</span>
+              <span id="computedShavedPreview" class="font-mono font-bold text-emerald-700">4 minutes (80% faster)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Input 3: Time Horizon -->
+        <div class="space-y-2 pt-1 border-t border-zinc-100">
+          <div class="flex items-center justify-between">
+            <label for="horizonSlider" class="block text-sm font-bold text-ink">
+              Time Horizon
+            </label>
+            <div class="flex items-center gap-1.5">
+              <span id="horizonLabel" class="font-mono font-bold text-sm bg-amber-200 border border-ink px-2.5 py-0.5 rounded-md">
+                5 Years
+              </span>
+              <span id="xkcdHorizonTag" class="text-[11px] font-sketch text-zinc-600">(xkcd chart)</span>
+            </div>
+          </div>
+          <input 
+            type="range" 
+            id="horizonSlider" 
+            min="1" 
+            max="10" 
+            step="1" 
+            value="5" 
+            class="w-full"
+          />
+          <div class="flex justify-between text-[11px] font-mono text-zinc-400 px-0.5">
+            <span>1 yr</span>
+            <span>3 yrs</span>
+            <span class="text-ink font-bold">5 yrs</span>
+            <span>7 yrs</span>
+            <span>10 yrs</span>
+          </div>
+        </div>
+
+        <!-- Input 4: Optional Reality Check -->
+        <div class="pt-3 border-t-2 border-dashed border-zinc-300 space-y-2">
+          <div class="flex items-center justify-between">
+            <label for="buildHoursInput" class="text-sm font-bold text-ink flex items-center gap-1.5">
+              <span>🛠️ Estimated Build Time</span>
+              <span class="text-[11px] font-normal text-zinc-500">(Optional)</span>
+            </label>
+            <span class="text-xs text-zinc-500">in hours</span>
+          </div>
+          <div class="flex gap-2 items-center">
+            <input 
+              type="number" 
+              id="buildHoursInput" 
+              min="0" 
+              step="any" 
+              placeholder="e.g. 6" 
+              class="w-full rounded-lg border-2 border-zinc-300 focus:border-ink px-3.5 py-2 text-sm font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-amber-400 bg-zinc-50 focus:bg-white transition"
+            />
+            <button type="button" onclick="document.getElementById('buildHoursInput').value=''; updateCalculator();" class="text-xs px-2.5 py-2 text-zinc-500 hover:text-ink border border-zinc-300 rounded-lg bg-white">
+              Clear
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Column: Headline Output & Breakdown (7 cols) -->
+      <section class="lg:col-span-7 space-y-6">
+        
+        <!-- Primary Headline Result Card -->
+        <div class="bg-white rounded-xl border-2 border-ink shadow-sketch p-6 sm:p-8 relative overflow-hidden">
+          <!-- Decorative corner badge -->
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <span class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-300 border border-ink text-ink">
+              <span id="modeIndicatorDot" class="w-2 h-2 rounded-full bg-ink"></span>
+              <span id="modeIndicatorText">24/7 Calendar Time</span>
+            </span>
+            <span class="text-xs font-mono text-zinc-500" id="formulaSummary">
+              1/day × 1m × 5 yrs
+            </span>
+          </div>
+
+          <p class="text-sm sm:text-base font-medium text-zinc-600">
+            Across <strong id="headlineHorizon" class="text-ink">5 years</strong>, you can spend up to:
+          </p>
+
+          <!-- Giant Headline Number -->
+          <div class="my-3 sm:my-4">
+            <div id="headlineResult" class="text-3xl sm:text-5xl font-extrabold tracking-tight text-ink leading-tight">
+              1 day, 6 hours, 26 minutes
+            </div>
+            <div id="secondaryExactResult" class="mt-2 text-sm sm:text-base font-mono text-zinc-600 flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span>= <strong>30.44 hours</strong> total</span>
+              <span class="text-zinc-300">|</span>
+              <span><strong>1,826 minutes</strong></span>
+              <span class="text-zinc-300">|</span>
+              <span id="xkcdStyleRounding" class="font-sketch text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">
+                xkcd label: ~1 DAY
+              </span>
+            </div>
+          </div>
+
+          <p class="text-xs sm:text-sm text-zinc-600 leading-relaxed border-t border-zinc-200 pt-3">
+            ...working on automating or streamlining this task before you spend more time optimizing than you save.
+          </p>
+
+          <!-- Breakdown Metrics Grid -->
+          <div class="grid grid-cols-3 gap-3 sm:gap-4 mt-6">
+            <div class="bg-zinc-50 rounded-lg border border-ink p-3 sm:p-4">
+              <div class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-zinc-500">Saved / Week</div>
+              <div id="savedPerWeek" class="text-base sm:text-xl font-extrabold font-mono text-ink mt-1">7m 0s</div>
+              <div id="runsPerWeek" class="text-[11px] text-zinc-500 mt-0.5">7 runs/wk</div>
+            </div>
+            <div class="bg-zinc-50 rounded-lg border border-ink p-3 sm:p-4">
+              <div class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-zinc-500">Saved / Year</div>
+              <div id="savedPerYear" class="text-base sm:text-xl font-extrabold font-mono text-ink mt-1">6h 5m</div>
+              <div id="runsPerYear" class="text-[11px] text-zinc-500 mt-0.5">365 runs/yr</div>
+            </div>
+            <div class="bg-amber-50 rounded-lg border border-ink p-3 sm:p-4">
+              <div class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-amber-900">Full Horizon</div>
+              <div id="savedTotalHorizon" class="text-base sm:text-xl font-extrabold font-mono text-ink mt-1">30h 26m</div>
+              <div id="runsTotalHorizon" class="text-[11px] text-amber-800 mt-0.5">1,826 runs</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reality Check / Break-Even Verdict Card (Dynamic) -->
+        <div id="realityCheckCard" class="rounded-xl border-2 border-ink shadow-sketch p-5 sm:p-6 transition-colors bg-white">
+          <div id="realityCheckEmpty" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 class="text-sm sm:text-base font-bold text-ink">Want a Reality Check?</h3>
+              <p class="text-xs sm:text-sm text-zinc-600 mt-0.5">
+                Enter your <strong>Estimated Build Time</strong> on the left to calculate your exact break-even date and net ROI.
+              </p>
+            </div>
+            <button type="button" onclick="document.getElementById('buildHoursInput').value='8'; updateCalculator();" class="shrink-0 text-xs font-semibold px-3 py-2 rounded-lg bg-zinc-100 hover:bg-amber-200 border border-ink transition">
+              Try "8 hours" →
+            </button>
+          </div>
+
+          <div id="realityCheckActive" class="hidden space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div class="flex items-center gap-2.5">
+                <span id="verdictBadge" class="text-xs font-extrabold uppercase tracking-wider px-3 py-1 rounded-full border border-ink">
+                  WORTH IT
+                </span>
+                <h3 id="verdictHeadline" class="text-base sm:text-lg font-extrabold text-ink">
+                  You break even in 1 year, 3 months!
+                </h3>
+              </div>
+              <span id="netRoiPill" class="text-xs font-mono font-bold px-2.5 py-1 rounded bg-white border border-ink">
+                Net: +22.4 hrs
+              </span>
+            </div>
+
+            <!-- Visual Progress Bar comparing Build Time vs Break-Even Budget -->
+            <div class="space-y-1.5">
+              <div class="flex justify-between text-xs font-medium text-zinc-700">
+                <span>Build Effort: <strong id="buildEffortLabel" class="font-mono">8.0 hrs</strong></span>
+                <span>Max Budget: <strong id="maxBudgetLabel" class="font-mono">30.4 hrs</strong></span>
+              </div>
+              <div class="w-full h-4 bg-zinc-200 rounded-full border border-ink overflow-hidden p-0.5">
+                <div id="roiProgressBar" class="h-full rounded-full transition-all duration-300 bg-emerald-500" style="width: 26%"></div>
+              </div>
+              <p id="verdictDetailText" class="text-xs sm:text-sm text-zinc-700 pt-1">
+                After breaking even around <strong>February 2028</strong>, every remaining year saves you pure time.
+              </p>
+            </div>
+          </div>
+        </div>
+
+      </section>
+    </div>
+
+    <!-- Bottom Section: Interactive xkcd 1205 Reference Matrix -->
+    <section class="bg-white rounded-xl border-2 border-ink shadow-sketch p-5 sm:p-7 space-y-5">
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b-2 border-ink pb-4">
+        <div>
+          <div class="inline-block text-xs font-sketch font-bold uppercase tracking-wider bg-zinc-100 border border-ink px-2.5 py-0.5 rounded mb-1.5">
+            Interactive Reference Chart
+          </div>
+          <h2 class="text-xl sm:text-2xl font-sketch font-bold text-ink tracking-wide">
+            HOW LONG CAN YOU WORK ON MAKING A ROUTINE TASK MORE EFFICIENT BEFORE YOU'RE SPENDING MORE TIME THAN YOU SAVE?
+          </h2>
+          <p class="text-xs sm:text-sm text-zinc-600 mt-1">
+            Click any cell to load those values into the calculator. The closest cell to your current inputs highlights automatically in <span class="bg-amber-300 px-1.5 py-0.5 rounded border border-ink font-semibold text-ink">amber</span>.
+          </p>
+        </div>
+
+        <div class="flex items-center gap-3 text-xs shrink-0">
+          <div class="flex items-center gap-1.5">
+            <span class="w-4 h-4 rounded bg-amber-300 border border-ink inline-block"></span>
+            <span class="font-medium text-zinc-700">Closest Match</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-4 h-4 rounded bg-zinc-700 border border-ink inline-block"></span>
+            <span class="font-medium text-zinc-700">Exceeds Horizon</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Responsive Matrix Container -->
+      <div class="overflow-x-auto pb-2">
+        <div class="min-w-[680px]">
+          <!-- Top Axis Label -->
+          <div class="grid grid-cols-7 mb-2">
+            <div></div>
+            <div class="col-span-6 text-center font-sketch font-bold text-sm sm:text-base tracking-wider text-ink flex items-center justify-center gap-3">
+              <span class="h-[2px] bg-ink flex-1 max-w-[100px]"></span>
+              <span>HOW OFTEN YOU DO THE TASK</span>
+              <span class="h-[2px] bg-ink flex-1 max-w-[100px]"></span>
+            </div>
+          </div>
+
+          <div class="flex items-stretch gap-3">
+            <!-- Left Vertical Axis Label -->
+            <div class="flex flex-col items-center justify-center w-8 shrink-0 select-none">
+              <div class="w-[2px] flex-1 bg-ink max-h-16 mb-2"></div>
+              <span class="font-sketch font-bold text-xs sm:text-sm text-center leading-tight tracking-wide text-ink">
+                HOW<br>MUCH<br>TIME<br>YOU<br>SHAVE<br>OFF
+              </span>
+              <div class="w-[2px] flex-1 bg-ink max-h-16 mt-2"></div>
+            </div>
+
+            <!-- The 9x6 Grid Table -->
+            <div class="flex-1">
+              <table class="w-full border-collapse table-fixed" id="xkcdMatrixTable">
+                <thead>
+                  <tr>
+                    <th class="w-28 p-2"></th>
+                    <th class="p-2 text-center font-sketch font-bold text-sm sm:text-base text-ink">50/DAY</th>
+                    <th class="p-2 text-center font-sketch font-bold text-sm sm:text-base text-ink">5/DAY</th>
+                    <th class="p-2 text-center font-sketch font-bold text-sm sm:text-base text-ink">DAILY</th>
+                    <th class="p-2 text-center font-sketch font-bold text-sm sm:text-base text-ink">WEEKLY</th>
+                    <th class="p-2 text-center font-sketch font-bold text-sm sm:text-base text-ink">MONTHLY</th>
+                    <th class="p-2 text-center font-sketch font-bold text-sm sm:text-base text-ink">YEARLY</th>
+                  </tr>
+                </thead>
+                <tbody id="matrixBody" class="border-2 border-ink">
+                  <!-- Populated dynamically via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-zinc-500 pt-2 border-t border-zinc-200">
+        <p>
+          Note: Matrix cells dynamically reflect your selected <strong>Time Horizon (<span id="matrixHorizonFoot">5 yrs</span>)</strong> and <strong>Clock Mode (<span id="matrixModeFoot">24/7 Calendar</span>)</strong>.
+        </p>
+        <p class="font-sketch text-zinc-700">
+          Original comic concept by Randall Munroe (xkcd.com/1205)
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    /**
+     * State & Configuration
+     */
+    const state = {
+      scheduleMode: '247', // '247' (xkcd continuous time) or 'work' (8h/day, 5d/wk, 50wks/yr)
+      beforeAfterMode: false,
+      freqValue: 1,
+      freqUnit: 'day',
+      savedValue: 1,
+      savedUnit: 'minutes',
+      horizonYears: 5,
+      buildHours: null
+    };
+
+    // Standard xkcd 1205 Matrix Axes
+    const MATRIX_COLS = [
+      { label: '50/DAY', freqVal: 50, freqUnit: 'day' },
+      { label: '5/DAY',  freqVal: 5,  freqUnit: 'day' },
+      { label: 'DAILY',  freqVal: 1,  freqUnit: 'day' },
+      { label: 'WEEKLY', freqVal: 1,  freqUnit: 'week' },
+      { label: 'MONTHLY',freqVal: 1,  freqUnit: 'month' },
+      { label: 'YEARLY', freqVal: 1,  freqUnit: 'year' }
+    ];
+
+    const MATRIX_ROWS = [
+      { label: '1 SECOND',   savedVal: 1,  savedUnit: 'seconds', seconds: 1 },
+      { label: '5 SECONDS',  savedVal: 5,  savedUnit: 'seconds', seconds: 5 },
+      { label: '30 SECONDS', savedVal: 30, savedUnit: 'seconds', seconds: 30 },
+      { label: '1 MINUTE',   savedVal: 1,  savedUnit: 'minutes', seconds: 60 },
+      { label: '5 MINUTES',  savedVal: 5,  savedUnit: 'minutes', seconds: 300 },
+      { label: '30 MINUTES', savedVal: 30, savedUnit: 'minutes', seconds: 1800 },
+      { label: '1 HOUR',     savedVal: 1,  savedUnit: 'hours',   seconds: 3600 },
+      { label: '6 HOURS',    savedVal: 6,  savedUnit: 'hours',   seconds: 21600 },
+      { label: '1 DAY',      savedVal: 1,  savedUnit: 'days',    seconds: 86400 }
+    ];
+
+    // DOM Elements
+    const el = {
+      freqValue: document.getElementById('freqValue'),
+      freqUnit: document.getElementById('freqUnit'),
+      savedValue: document.getElementById('savedValue'),
+      savedUnit: document.getElementById('savedUnit'),
+      currentDurValue: document.getElementById('currentDurValue'),
+      currentDurUnit: document.getElementById('currentDurUnit'),
+      newDurValue: document.getElementById('newDurValue'),
+      newDurUnit: document.getElementById('newDurUnit'),
+      computedShavedPreview: document.getElementById('computedShavedPreview'),
+      horizonSlider: document.getElementById('horizonSlider'),
+      horizonLabel: document.getElementById('horizonLabel'),
+      xkcdHorizonTag: document.getElementById('xkcdHorizonTag'),
+      buildHoursInput: document.getElementById('buildHoursInput'),
+      mode247Btn: document.getElementById('mode247Btn'),
+      modeWorkBtn: document.getElementById('modeWorkBtn'),
+      directTimeInputGroup: document.getElementById('directTimeInputGroup'),
+      beforeAfterInputGroup: document.getElementById('beforeAfterInputGroup'),
+      toggleBeforeAfterBtn: document.getElementById('toggleBeforeAfterBtn'),
+      annualRunsBadge: document.getElementById('annualRunsBadge'),
+      modeIndicatorText: document.getElementById('modeIndicatorText'),
+      formulaSummary: document.getElementById('formulaSummary'),
+      headlineHorizon: document.getElementById('headlineHorizon'),
+      headlineResult: document.getElementById('headlineResult'),
+      secondaryExactResult: document.getElementById('secondaryExactResult'),
+      xkcdStyleRounding: document.getElementById('xkcdStyleRounding'),
+      savedPerWeek: document.getElementById('savedPerWeek'),
+      runsPerWeek: document.getElementById('runsPerWeek'),
+      savedPerYear: document.getElementById('savedPerYear'),
+      runsPerYear: document.getElementById('runsPerYear'),
+      savedTotalHorizon: document.getElementById('savedTotalHorizon'),
+      runsTotalHorizon: document.getElementById('runsTotalHorizon'),
+      realityCheckCard: document.getElementById('realityCheckCard'),
+      realityCheckEmpty: document.getElementById('realityCheckEmpty'),
+      realityCheckActive: document.getElementById('realityCheckActive'),
+      verdictBadge: document.getElementById('verdictBadge'),
+      verdictHeadline: document.getElementById('verdictHeadline'),
+      netRoiPill: document.getElementById('netRoiPill'),
+      buildEffortLabel: document.getElementById('buildEffortLabel'),
+      maxBudgetLabel: document.getElementById('maxBudgetLabel'),
+      roiProgressBar: document.getElementById('roiProgressBar'),
+      verdictDetailText: document.getElementById('verdictDetailText'),
+      matrixBody: document.getElementById('matrixBody'),
+      matrixHorizonFoot: document.getElementById('matrixHorizonFoot'),
+      matrixModeFoot: document.getElementById('matrixModeFoot')
+    };
+
+    /**
+     * Conversion Helpers
+     */
+    function getTimeConstants(mode) {
+      if (mode === 'work') {
+        // Standard Work Schedule: 8 hrs/day, 5 days/week, 50 weeks/year (250 workdays/yr, 2,000 hrs/yr)
+        return {
+          hoursPerDay: 8,
+          daysPerWeek: 5,
+          weeksPerYear: 50,
+          daysPerYear: 250,
+          hoursPerYear: 2000,
+          secondsPerDay: 8 * 3600,
+          secondsPerWeek: 40 * 3600,
+          secondsPerMonth: (250 / 12) * 8 * 3600,
+          secondsPerYear: 2000 * 3600
+        };
+      } else {
+        // Continuous 24/7 Calendar (matches xkcd 1205 math: 365.25 days/yr)
+        return {
+          hoursPerDay: 24,
+          daysPerWeek: 7,
+          weeksPerYear: 365.25 / 7,
+          daysPerYear: 365.25,
+          hoursPerYear: 365.25 * 24,
+          secondsPerDay: 86400,
+          secondsPerWeek: 7 * 86400,
+          secondsPerMonth: (365.25 / 12) * 86400,
+          secondsPerYear: 365.25 * 86400
+        };
+      }
+    }
+
+    function unitToSeconds(val, unit, mode) {
+      const c = getTimeConstants(mode);
+      switch (unit) {
+        case 'seconds': return val;
+        case 'minutes': return val * 60;
+        case 'hours':   return val * 3600;
+        case 'days':    return val * c.secondsPerDay;
+        default:        return val;
+      }
+    }
+
+    function frequencyToAnnualRuns(freqVal, freqUnit, mode) {
+      const c = getTimeConstants(mode);
+      switch (freqUnit) {
+        case 'hour':  return freqVal * c.hoursPerYear;
+        case 'day':   return freqVal * c.daysPerYear;
+        case 'week':  return freqVal * c.weeksPerYear;
+        case 'month': return freqVal * 12;
+        case 'year':  return freqVal;
+        default:      return freqVal * c.daysPerYear;
+      }
+    }
+
+    /**
+     * Format duration intuitively into human-readable units
+     * Respects whether a "day" is 24h (calendar) or 8h (workday)
+     */
+    function formatDetailedDuration(totalSeconds, mode) {
+      if (totalSeconds <= 0) return '0 seconds';
+      const c = getTimeConstants(mode);
+      const secPerDay = c.secondsPerDay;
+      const secPerMonth = c.secondsPerMonth;
+      const secPerYear = c.secondsPerYear;
+
+      if (totalSeconds < 60) {
+        const s = Math.round(totalSeconds * 10) / 10;
+        return `${s} ${s === 1 ? 'second' : 'seconds'}`;
+      }
+
+      const parts = [];
+      let rem = totalSeconds;
+
+      const years = Math.floor(rem / secPerYear);
+      if (years > 0) {
+        parts.push(`${years} ${years === 1 ? 'year' : 'years'}`);
+        rem -= years * secPerYear;
+      }
+
+      const months = Math.floor(rem / secPerMonth);
+      if (months > 0 && parts.length < 3) {
+        parts.push(`${months} ${months === 1 ? 'month' : 'months'}`);
+        rem -= months * secPerMonth;
+      }
+
+      const days = Math.floor(rem / secPerDay);
+      if (days > 0 && parts.length < 3) {
+        parts.push(`${days} ${days === 1 ? 'day' : 'days'}`);
+        rem -= days * secPerDay;
+      }
+
+      const hours = Math.floor(rem / 3600);
+      if (hours > 0 && parts.length < 3) {
+        parts.push(`${hours} ${hours === 1 ? 'hour' : 'hours'}`);
+        rem -= hours * 3600;
+      }
+
+      const minutes = Math.floor(rem / 60);
+      if (minutes > 0 && parts.length < 3 && years === 0) {
+        parts.push(`${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`);
+        rem -= minutes * 60;
+      }
+
+      if (parts.length === 0) {
+        const secs = Math.round(totalSeconds);
+        return `${secs} ${secs === 1 ? 'second' : 'seconds'}`;
+      }
+
+      return parts.join(', ');
+    }
+
+    /**
+     * Compact formatter for metric cards (e.g., "6h 5m", "30h 26m", "14d 4h")
+     */
+    function formatCompactDuration(totalSeconds, mode) {
+      if (totalSeconds <= 0) return '0s';
+      const c = getTimeConstants(mode);
+      if (totalSeconds < 60) return `${Math.round(totalSeconds)}s`;
+      if (totalSeconds < 3600) {
+        const m = Math.floor(totalSeconds / 60);
+        const s = Math.round(totalSeconds % 60);
+        return s > 0 ? `${m}m ${s}s` : `${m}m`;
+      }
+      if (totalSeconds < c.secondsPerDay * 2) {
+        const h = Math.floor(totalSeconds / 3600);
+        const m = Math.round((totalSeconds % 3600) / 60);
+        return m > 0 ? `${h}h ${m}m` : `${h}h`;
+      }
+      const d = Math.floor(totalSeconds / c.secondsPerDay);
+      const h = Math.round((totalSeconds % c.secondsPerDay) / 3600);
+      return h > 0 ? `${d}d ${h}h` : `${d}d`;
+    }
+
+    /**
+     * Classic xkcd 1205 single-unit rounded label (e.g., "1 DAY", "4 WEEKS", "9 MONTHS")
+     */
+    function formatXkcdStyleLabel(totalSeconds, mode) {
+      if (totalSeconds <= 0) return '0 SECONDS';
+      const c = getTimeConstants(mode);
+      const days = totalSeconds / c.secondsPerDay;
+      const weeks = totalSeconds / c.secondsPerWeek;
+      const months = totalSeconds / c.secondsPerMonth;
+      const years = totalSeconds / c.secondsPerYear;
+
+      if (totalSeconds < 55) {
+        const s = Math.max(1, Math.round(totalSeconds));
+        return `${s} ${s === 1 ? 'SECOND' : 'SECONDS'}`;
+      }
+      if (totalSeconds < 3300) {
+        const m = Math.max(1, Math.round(totalSeconds / 60));
+        return `${m} ${m === 1 ? 'MINUTE' : 'MINUTES'}`;
+      }
+      if (days < 0.85) {
+        const h = Math.max(1, Math.round(totalSeconds / 3600));
+        return `${h} ${h === 1 ? 'HOUR' : 'HOURS'}`;
+      }
+      if (days < 13.5) {
+        const d = Math.max(1, Math.round(days));
+        return `${d} ${d === 1 ? 'DAY' : 'DAYS'}`;
+      }
+      if (weeks < 8.5) {
+        const w = Math.max(1, Math.round(weeks));
+        return `${w} ${w === 1 ? 'WEEK' : 'WEEKS'}`;
+      }
+      if (months < 11.5) {
+        const mo = Math.max(1, Math.round(months));
+        return `${mo} ${mo === 1 ? 'MONTH' : 'MONTHS'}`;
+      }
+      const yr = Math.round(years * 10) / 10;
+      return `${yr} ${yr === 1 ? 'YEAR' : 'YEARS'}`;
+    }
+
+    /**
+     * UI Actions & Mode Switches
+     */
+    function setScheduleMode(mode) {
+      state.scheduleMode = mode;
+      if (mode === '247') {
+        el.mode247Btn.className = 'py-2 px-3 rounded-md text-xs sm:text-sm font-semibold transition flex flex-col items-center text-center bg-ink text-white shadow-sm';
+        el.modeWorkBtn.className = 'py-2 px-3 rounded-md text-xs sm:text-sm font-semibold transition flex flex-col items-center text-center text-zinc-700 hover:text-ink';
+        el.modeIndicatorText.textContent = '24/7 Calendar Time';
+        el.matrixModeFoot.textContent = '24/7 Calendar';
+      } else {
+        el.modeWorkBtn.className = 'py-2 px-3 rounded-md text-xs sm:text-sm font-semibold transition flex flex-col items-center text-center bg-ink text-white shadow-sm';
+        el.mode247Btn.className = 'py-2 px-3 rounded-md text-xs sm:text-sm font-semibold transition flex flex-col items-center text-center text-zinc-700 hover:text-ink';
+        el.modeIndicatorText.textContent = 'Work Time (8h/day · 40h/wk)';
+        el.matrixModeFoot.textContent = '8-hr Workdays';
+      }
+      updateCalculator();
+    }
+
+    function toggleBeforeAfterMode() {
+      state.beforeAfterMode = !state.beforeAfterMode;
+      if (state.beforeAfterMode) {
+        el.directTimeInputGroup.classList.add('hidden');
+        el.beforeAfterInputGroup.classList.remove('hidden');
+        el.toggleBeforeAfterBtn.textContent = 'Direct input mode';
+      } else {
+        el.directTimeInputGroup.classList.remove('hidden');
+        el.beforeAfterInputGroup.classList.add('hidden');
+        el.toggleBeforeAfterBtn.textContent = 'Before / After mode';
+      }
+      updateCalculator();
+    }
+
+    function applyPreset(freqVal, freqUnit, savedVal, savedUnit) {
+      if (state.beforeAfterMode) {
+        toggleBeforeAfterMode();
+      }
+      el.freqValue.value = freqVal;
+      el.freqUnit.value = freqUnit;
+      el.savedValue.value = savedVal;
+      el.savedUnit.value = savedUnit;
+      el.horizonSlider.value = 5;
+      updateCalculator();
+    }
+
+    function resetDefaults() {
+      state.scheduleMode = '247';
+      if (state.beforeAfterMode) toggleBeforeAfterMode();
+      el.freqValue.value = 1;
+      el.freqUnit.value = 'day';
+      el.savedValue.value = 1;
+      el.savedUnit.value = 'minutes';
+      el.horizonSlider.value = 5;
+      el.buildHoursInput.value = '';
+      setScheduleMode('247');
+    }
+
+    /**
+     * Core Calculation & DOM Rendering
+     */
+    function updateCalculator() {
+      const mode = state.scheduleMode;
+      const c = getTimeConstants(mode);
+
+      // 1. Read Frequency
+      const freqVal = Math.max(0, parseFloat(el.freqValue.value) || 0);
+      const freqUnit = el.freqUnit.value;
+      const annualRuns = frequencyToAnnualRuns(freqVal, freqUnit, mode);
+
+      // 2. Read Time Shaved Off (in seconds)
+      let savedSecondsPerRun = 0;
+      if (state.beforeAfterMode) {
+        const curVal = Math.max(0, parseFloat(el.currentDurValue.value) || 0);
+        const curUnit = el.currentDurUnit.value;
+        const newVal = Math.max(0, parseFloat(el.newDurValue.value) || 0);
+        const newUnit = el.newDurUnit.value;
+
+        const curSec = unitToSeconds(curVal, curUnit, mode);
+        const newSec = unitToSeconds(newVal, newUnit, mode);
+        savedSecondsPerRun = Math.max(0, curSec - newSec);
+
+        const pctFaster = curSec > 0 ? Math.round((savedSecondsPerRun / curSec) * 100) : 0;
+        el.computedShavedPreview.textContent = `${formatDetailedDuration(savedSecondsPerRun, mode)} (${pctFaster}% faster)`;
+      } else {
+        const sVal = Math.max(0, parseFloat(el.savedValue.value) || 0);
+        const sUnit = el.savedUnit.value;
+        savedSecondsPerRun = unitToSeconds(sVal, sUnit, mode);
+      }
+
+      // 3. Read Horizon
+      const horizonYears = parseInt(el.horizonSlider.value, 10) || 5;
+      el.horizonLabel.textContent = `${horizonYears} ${horizonYears === 1 ? 'Year' : 'Years'}`;
+      el.headlineHorizon.textContent = `${horizonYears} ${horizonYears === 1 ? 'year' : 'years'}`;
+      el.matrixHorizonFoot.textContent = `${horizonYears} ${horizonYears === 1 ? 'yr' : 'yrs'}`;
+      el.xkcdHorizonTag.classList.toggle('hidden', horizonYears !== 5);
+
+      // 4. Compute Totals
+      const totalRunsHorizon = annualRuns * horizonYears;
+      const runsPerWeek = annualRuns / c.weeksPerYear;
+
+      const secondsSavedPerWeek = runsPerWeek * savedSecondsPerRun;
+      const secondsSavedPerYear = annualRuns * savedSecondsPerRun;
+      const totalSecondsSavedHorizon = totalRunsHorizon * savedSecondsPerRun;
+
+      const totalHoursHorizon = totalSecondsSavedHorizon / 3600;
+      const totalMinutesHorizon = totalSecondsSavedHorizon / 60;
+
+      // 5. Update Badges & Headline
+      el.annualRunsBadge.textContent = `${Math.round(annualRuns).toLocaleString()} runs/yr`;
+      
+      const shortUnitMap = { hour: '/hr', day: '/day', week: '/wk', month: '/mo', year: '/yr' };
+      const shortSavedLabel = savedSecondsPerRun < 60 
+        ? `${Math.round(savedSecondsPerRun)}s` 
+        : savedSecondsPerRun < 3600 
+          ? `${Math.round(savedSecondsPerRun / 60 * 10) / 10}m` 
+          : `${Math.round(savedSecondsPerRun / 3600 * 10) / 10}h`;
+      el.formulaSummary.textContent = `${freqVal}${shortUnitMap[freqUnit]} × ${shortSavedLabel} × ${horizonYears}y`;
+
+      el.headlineResult.textContent = formatDetailedDuration(totalSecondsSavedHorizon, mode);
+
+      const formattedHrs = totalHoursHorizon >= 100 
+        ? Math.round(totalHoursHorizon).toLocaleString() 
+        : (Math.round(totalHoursHorizon * 100) / 100).toLocaleString();
+      const formattedMins = Math.round(totalMinutesHorizon).toLocaleString();
+      const xkcdTag = formatXkcdStyleLabel(totalSecondsSavedHorizon, mode);
+
+      el.secondaryExactResult.innerHTML = `
+        <span>= <strong>${formattedHrs} hours</strong> total</span>
+        <span class="text-zinc-300">|</span>
+        <span><strong>${formattedMins} minutes</strong></span>
+        <span class="text-zinc-300">|</span>
+        <span class="font-sketch text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">
+          xkcd style: ~${xkcdTag}
+        </span>
+      `;
+
+      // 6. Update Breakdown Cards
+      el.savedPerWeek.textContent = formatCompactDuration(secondsSavedPerWeek, mode);
+      el.runsPerWeek.textContent = `${(Math.round(runsPerWeek * 10) / 10).toLocaleString()} runs/wk`;
+
+      el.savedPerYear.textContent = formatCompactDuration(secondsSavedPerYear, mode);
+      el.runsPerYear.textContent = `${Math.round(annualRuns).toLocaleString()} runs/yr`;
+
+      el.savedTotalHorizon.textContent = formatCompactDuration(totalSecondsSavedHorizon, mode);
+      el.runsTotalHorizon.textContent = `${Math.round(totalRunsHorizon).toLocaleString()} runs`;
+
+      // 7. Update Reality Check / Break-Even Analysis
+      const rawBuild = el.buildHoursInput.value.trim();
+      const buildHours = rawBuild === '' ? NaN : parseFloat(rawBuild);
+
+      if (!isNaN(buildHours) && buildHours >= 0) {
+        el.realityCheckEmpty.classList.add('hidden');
+        el.realityCheckActive.classList.remove('hidden');
+
+        const buildSeconds = buildHours * 3600;
+        const netHours = totalHoursHorizon - buildHours;
+        const isWorthIt = buildHours <= totalHoursHorizon && totalHoursHorizon > 0;
+
+        el.buildEffortLabel.textContent = `${buildHours.toLocaleString()} hrs`;
+        el.maxBudgetLabel.textContent = `${formattedHrs} hrs`;
+
+        const ratioPct = totalHoursHorizon > 0 ? Math.min(100, Math.round((buildHours / totalHoursHorizon) * 100)) : 100;
+        el.roiProgressBar.style.width = `${Math.max(4, ratioPct)}%`;
+
+        if (isWorthIt) {
+          el.realityCheckCard.className = 'rounded-xl border-2 border-ink shadow-sketch p-5 sm:p-6 transition-colors bg-emerald-50/90';
+          el.verdictBadge.className = 'text-xs font-extrabold uppercase tracking-wider px-3 py-1 rounded-full border border-ink bg-emerald-400 text-ink';
+          el.verdictBadge.textContent = 'WORTH IT';
+          el.roiProgressBar.className = 'h-full rounded-full transition-all duration-300 bg-emerald-500';
+
+          const yearsToBreakEven = secondsSavedPerYear > 0 ? buildSeconds / secondsSavedPerYear : Infinity;
+          const breakEvenDurationStr = formatDetailedDuration(yearsToBreakEven * c.secondsPerYear, mode);
+          el.verdictHeadline.textContent = buildHours === 0 
+            ? 'Instant payoff!' 
+            : `Breaks even in ${breakEvenDurationStr}`;
+
+          el.netRoiPill.textContent = `Net Saved: +${(Math.round(netHours * 10) / 10).toLocaleString()} hrs`;
+
+          // Estimate calendar break-even date
+          const breakEvenDate = new Date(Date.now() + yearsToBreakEven * 365.25 * 86400 * 1000);
+          const dateStr = breakEvenDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+          el.verdictDetailText.innerHTML = `You'll recoup your <strong>${buildHours}h</strong> investment around <strong>${dateStr}</strong>, netting <strong>+${(Math.round(netHours * 10) / 10).toLocaleString()} hours</strong> (${formatDetailedDuration(netHours * 3600, mode)}) by year ${horizonYears}.`;
+        } else {
+          el.realityCheckCard.className = 'rounded-xl border-2 border-ink shadow-sketch p-5 sm:p-6 transition-colors bg-rose-50/90';
+          el.verdictBadge.className = 'text-xs font-extrabold uppercase tracking-wider px-3 py-1 rounded-full border border-ink bg-rose-400 text-ink';
+          el.verdictBadge.textContent = 'NOT WORTH IT';
+          el.roiProgressBar.className = 'h-full rounded-full transition-all duration-300 bg-rose-500';
+
+          const yearsToBreakEven = secondsSavedPerYear > 0 ? buildSeconds / secondsSavedPerYear : Infinity;
+          el.verdictHeadline.textContent = isFinite(yearsToBreakEven) 
+            ? `Takes ${Math.round(yearsToBreakEven * 10) / 10} yrs to break even` 
+            : 'Never breaks even';
+
+          el.netRoiPill.textContent = `Net Loss: ${(Math.round(netHours * 10) / 10).toLocaleString()} hrs`;
+          el.verdictDetailText.innerHTML = `Spending <strong>${buildHours} hours</strong> exceeds the <strong>${formattedHrs} hours</strong> you would save over ${horizonYears} ${horizonYears === 1 ? 'year' : 'years'}. Try a simpler hack or partial automation!`;
+        }
+      } else {
+        el.realityCheckCard.className = 'rounded-xl border-2 border-ink shadow-sketch p-5 sm:p-6 transition-colors bg-white';
+        el.realityCheckEmpty.classList.remove('hidden');
+        el.realityCheckActive.classList.add('hidden');
+      }
+
+      // 8. Re-render Interactive Reference Matrix & Highlight Closest Cell
+      renderMatrix(annualRuns, savedSecondsPerRun, horizonYears, mode);
+    }
+
+    /**
+     * Render the 9x6 xkcd-style matrix and highlight the nearest matching cell
+     */
+    function renderMatrix(currentAnnualRuns, currentSavedSeconds, horizonYears, mode) {
+      const c = getTimeConstants(mode);
+      const maxHorizonSeconds = horizonYears * c.secondsPerYear;
+
+      // Find closest row and column using logarithmic distance so scale feels intuitive
+      let bestRowIdx = -1;
+      let bestColIdx = -1;
+
+      if (currentAnnualRuns > 0 && currentSavedSeconds > 0) {
+        let minRowDist = Infinity;
+        MATRIX_ROWS.forEach((row, rIdx) => {
+          const dist = Math.abs(Math.log10(row.seconds) - Math.log10(currentSavedSeconds));
+          if (dist < minRowDist) {
+            minRowDist = dist;
+            bestRowIdx = rIdx;
+          }
+        });
+
+        let minColDist = Infinity;
+        MATRIX_COLS.forEach((col, cIdx) => {
+          const colRuns = frequencyToAnnualRuns(col.freqVal, col.freqUnit, mode);
+          const dist = Math.abs(Math.log10(colRuns) - Math.log10(currentAnnualRuns));
+          if (dist < minColDist) {
+            minColDist = dist;
+            bestColIdx = cIdx;
+          }
+        });
+      }
+
+      let html = '';
+      MATRIX_ROWS.forEach((row, rIdx) => {
+        html += `<tr>`;
+        // Row Header
+        html += `
+          <td class="py-2.5 px-3 text-right font-sketch font-bold text-xs sm:text-sm text-ink bg-paper border-b border-r-2 border-ink select-none whitespace-nowrap">
+            ${row.label}
+          </td>
+        `;
+
+        MATRIX_COLS.forEach((col, cIdx) => {
+          const colAnnualRuns = frequencyToAnnualRuns(col.freqVal, col.freqUnit, mode);
+          const cellSavedSeconds = colAnnualRuns * horizonYears * row.seconds;
+          const isShaded = cellSavedSeconds >= maxHorizonSeconds;
+          const isActive = (rIdx === bestRowIdx && cIdx === bestColIdx);
+
+          const cellText = isShaded ? '' : formatXkcdStyleLabel(cellSavedSeconds, mode);
+
+          let cellClasses = 'border border-ink text-center font-sketch text-xs sm:text-sm py-3 px-1.5 cursor-pointer transition select-none ';
+          if (isActive && isShaded) {
+            cellClasses += 'bg-zinc-800 text-amber-300 ring-2 ring-inset ring-amber-300 font-bold';
+          } else if (isActive) {
+            cellClasses += 'bg-amber-300 text-ink font-extrabold shadow-inner';
+          } else if (isShaded) {
+            cellClasses += 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300';
+          } else {
+            cellClasses += 'bg-white hover:bg-amber-100 text-ink font-semibold';
+          }
+
+          html += `
+            <td 
+              class="${cellClasses}"
+              title="Click to load: ${col.label}, shave ${row.label}"
+              onclick="selectMatrixCell(${col.freqVal}, '${col.freqUnit}', ${row.savedVal}, '${row.savedUnit}')"
+            >
+              ${isShaded ? (isActive ? 'MAXED' : '') : cellText}
+            </td>
+          `;
+        });
+
+        html += `</tr>`;
+      });
+
+      el.matrixBody.innerHTML = html;
+    }
+
+    function selectMatrixCell(freqVal, freqUnit, savedVal, savedUnit) {
+      if (state.beforeAfterMode) {
+        toggleBeforeAfterMode();
+      }
+      el.freqValue.value = freqVal;
+      el.freqUnit.value = freqUnit;
+      el.savedValue.value = savedVal;
+      el.savedUnit.value = savedUnit;
+      updateCalculator();
+    }
+
+    /**
+     * Attach Event Listeners & Initialize
+     */
+    function init() {
+      const inputs = [
+        el.freqValue, el.freqUnit,
+        el.savedValue, el.savedUnit,
+        el.currentDurValue, el.currentDurUnit,
+        el.newDurValue, el.newDurUnit,
+        el.horizonSlider, el.buildHoursInput
+      ];
+
+      inputs.forEach(input => {
+        input.addEventListener('input', updateCalculator);
+        input.addEventListener('change', updateCalculator);
+      });
+
+      updateCalculator();
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
+```
